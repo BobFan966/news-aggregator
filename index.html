@@ -1,0 +1,1812 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>资讯聚合系统 | News Aggregator</title>
+    <style>
+        /* ========== 全局样式 ========== */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --brand: #fb7299;
+            --brand-dark: #e05a82;
+            --brand-light: #fff0f3;
+            --bg: #f5f7fa;
+            --surface: #ffffff;
+            --text: #18191c;
+            --text-2: #61666d;
+            --text-3: #9499a0;
+            --border: #e3e5e7;
+            --radius: 12px;
+            --shadow: 0 2px 8px rgba(0,0,0,0.06);
+            --shadow-hover: 0 8px 24px rgba(0,0,0,0.1);
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.5;
+            min-height: 100vh;
+        }
+        a { color: inherit; text-decoration: none; }
+        img { max-width: 100%; display: block; }
+
+        /* ========== 顶部导航 ========== */
+        .top-nav {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: rgba(255,255,255,0.96);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border);
+        }
+        .nav-inner {
+            max-width: 1320px;
+            margin: 0 auto;
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            gap: 24px;
+        }
+        .logo-area {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-shrink: 0;
+        }
+        .logo-icon {
+            width: 38px;
+            height: 38px;
+            background: linear-gradient(135deg, var(--brand), var(--brand-dark));
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            color: white;
+        }
+        .logo-text {
+            font-size: 18px;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+        }
+        .logo-text span { color: var(--brand); }
+
+        .search-box {
+            flex: 1;
+            max-width: 480px;
+            position: relative;
+        }
+        .search-box input {
+            width: 100%;
+            height: 38px;
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 0 40px 0 16px;
+            font-size: 14px;
+            outline: none;
+            background: #f1f2f3;
+            transition: all 0.2s;
+        }
+        .search-box input:focus {
+            background: #fff;
+            border-color: var(--brand);
+        }
+        .search-box button {
+            position: absolute;
+            right: 4px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 60px;
+            height: 30px;
+            border: none;
+            border-radius: 15px;
+            background: var(--brand);
+            color: white;
+            font-size: 13px;
+            cursor: pointer;
+        }
+
+        .nav-actions {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            flex-shrink: 0;
+        }
+        .vip-entry {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 14px;
+            border-radius: 20px;
+            background: linear-gradient(135deg, #ffb821, #ff8c00);
+            color: #fff;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .vip-entry:hover { transform: translateY(-1px); }
+        .nav-icon {
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f1f2f3;
+            cursor: pointer;
+            font-size: 15px;
+            transition: background 0.2s;
+        }
+        .nav-icon:hover { background: var(--brand-light); }
+
+        /* ========== 分类导航 ========== */
+        .category-nav {
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            padding: 16px 0 10px;
+        }
+        .cat-inner {
+            max-width: 1320px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+        .cat-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 8px;
+        }
+        .cat-row:last-child { margin-bottom: 0; }
+        .cat-item {
+            padding: 6px 14px;
+            border-radius: 16px;
+            font-size: 14px;
+            color: var(--text-2);
+            cursor: pointer;
+            transition: all 0.15s;
+            white-space: nowrap;
+        }
+        .cat-item:hover { color: var(--brand); background: var(--brand-light); }
+        .cat-item.active {
+            background: var(--brand);
+            color: white;
+            font-weight: 500;
+        }
+        .cat-divider {
+            width: 1px;
+            height: 16px;
+            background: var(--border);
+            margin: 0 4px;
+        }
+        .cat-more {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 13px;
+            color: var(--text-3);
+            cursor: pointer;
+        }
+
+        /* ========== 主体容器 ========== */
+        .main-content {
+            max-width: 1320px;
+            margin: 0 auto;
+            padding: 20px;
+            position: relative;
+        }
+
+        /* ========== Tab 导航 ========== */
+        .tabs {
+            display: inline-flex;
+            background: var(--surface);
+            border-radius: 24px;
+            padding: 4px;
+            box-shadow: var(--shadow);
+            margin-bottom: 20px;
+            gap: 4px;
+        }
+        .tab-btn {
+            padding: 8px 20px;
+            border: none;
+            background: transparent;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-2);
+            transition: all 0.2s;
+        }
+        .tab-btn:hover { color: var(--brand); }
+        .tab-btn.active {
+            background: var(--brand);
+            color: white;
+        }
+
+        .tab-panel { display: none; }
+        .tab-panel.active { display: block; }
+
+        /* ========== 右侧悬浮刷新（换一换） ========== */
+        .refresh-float {
+            position: fixed;
+            right: 24px;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 90;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            padding: 14px 8px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            box-shadow: var(--shadow);
+            cursor: pointer;
+            font-size: 12px;
+            color: var(--text-2);
+            writing-mode: vertical-rl;
+            letter-spacing: 2px;
+            transition: all 0.2s;
+        }
+        .refresh-float:hover {
+            color: var(--brand);
+            border-color: var(--brand);
+            box-shadow: var(--shadow-hover);
+        }
+        .refresh-float:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .refresh-float .icon {
+            writing-mode: horizontal-tb;
+            font-size: 16px;
+        }
+
+        /* ========== 自动收集状态条 ========== */
+        .auto-collect-bar {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-right: 8px;
+            padding: 4px 10px;
+            font-size: 12px;
+            color: var(--text-2);
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            cursor: pointer;
+            user-select: none;
+            transition: all 0.2s;
+        }
+        .auto-collect-bar:hover {
+            border-color: var(--brand);
+            color: var(--brand);
+        }
+        .auto-collect-bar .ac-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #cbd5e1;
+            flex-shrink: 0;
+        }
+        .auto-collect-bar.on .ac-dot { background: #22c55e; box-shadow: 0 0 0 3px rgba(34,197,94,.15); }
+        .auto-collect-bar.running .ac-dot { background: #f59e0b; animation: ac-blink 1s infinite; }
+        .auto-collect-bar.failed .ac-dot { background: #ef4444; }
+        @keyframes ac-blink { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+        .auto-collect-bar .ac-next { color: var(--text-3); font-size: 11px; }
+
+        /* ========== 推荐位 Hero 网格 ========== */
+        .hero-grid {
+            display: grid;
+            grid-template-columns: 1.45fr 1fr;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        .hero-card {
+            position: relative;
+            background: var(--surface);
+            border-radius: var(--radius);
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            transition: all 0.25s;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+        }
+        .hero-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-hover);
+        }
+        .hero-cover {
+            position: relative;
+            aspect-ratio: 16/9;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            overflow: hidden;
+        }
+        .hero-cover img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .hero-cover::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(to top, rgba(0,0,0,0.6), transparent 50%);
+        }
+        .hero-rank {
+            position: absolute;
+            left: 12px;
+            top: 12px;
+            width: 32px;
+            height: 32px;
+            background: var(--brand);
+            color: white;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 14px;
+            z-index: 2;
+        }
+        .hero-info {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 16px;
+            color: white;
+            z-index: 2;
+        }
+        .hero-title {
+            font-size: 18px;
+            font-weight: 700;
+            line-height: 1.4;
+            margin-bottom: 8px;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        .hero-meta {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 12px;
+            opacity: 0.9;
+        }
+        .hero-side {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+        }
+        .side-card {
+            background: var(--surface);
+            border-radius: var(--radius);
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            transition: all 0.25s;
+            cursor: pointer;
+        }
+        .side-card:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-hover);
+        }
+        .side-cover {
+            position: relative;
+            aspect-ratio: 16/10;
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            overflow: hidden;
+        }
+        .side-cover img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .side-cover::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(to top, rgba(0,0,0,0.45), transparent 60%);
+        }
+        .side-duration {
+            position: absolute;
+            right: 8px;
+            bottom: 8px;
+            padding: 2px 6px;
+            background: rgba(0,0,0,0.6);
+            color: white;
+            border-radius: 4px;
+            font-size: 11px;
+            z-index: 2;
+        }
+        .side-info { padding: 10px 12px; }
+        .side-title {
+            font-size: 13px;
+            font-weight: 600;
+            line-height: 1.45;
+            color: var(--text);
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            margin-bottom: 8px;
+            min-height: 38px;
+        }
+        .side-meta {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 11px;
+            color: var(--text-3);
+        }
+
+        /* ========== 资讯卡片网格 ========== */
+        .section-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+        }
+        .section-title {
+            font-size: 20px;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .section-title::before {
+            content: '';
+            width: 4px;
+            height: 20px;
+            background: var(--brand);
+            border-radius: 2px;
+        }
+
+        #news-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+        }
+        .video-card {
+            background: var(--surface);
+            border-radius: var(--radius);
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            transition: all 0.25s;
+            cursor: pointer;
+        }
+        .video-card:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-hover);
+        }
+        .video-cover {
+            position: relative;
+            aspect-ratio: 16/10;
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            overflow: hidden;
+        }
+        .video-cover img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .video-badge {
+            position: absolute;
+            right: 10px;
+            bottom: 10px;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 11px;
+            font-weight: 700;
+            color: white;
+            z-index: 2;
+            background: rgba(0,0,0,0.65);
+        }
+        .video-badge.hot { background: #ef4444; }
+        .video-stats { display: none; }
+        .video-info { padding: 12px 14px 14px; }
+        .video-title {
+            font-size: 14px;
+            font-weight: 600;
+            line-height: 1.45;
+            color: var(--text);
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            margin-bottom: 8px;
+            min-height: 40px;
+        }
+        .video-meta {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            color: var(--text-3);
+        }
+        .video-author {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .video-avatar { display: none; }
+
+        /* ========== 左图右文资讯卡（有真实封面时使用） ========== */
+        .article-card {
+            /* 兜底样式（以防 inline 失效）*/
+            background: var(--surface);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            cursor: pointer;
+            transition: all 0.2s !important;
+        }
+        .article-card:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-hover) !important;
+        }
+        #news-grid .article-card {
+            /* 让 article-card 在 4 列网格里"占满一整行"的效果更优雅：每行 2 张并列，利用 subgrid。
+               但为了兼容现有 4 列布局，直接让每张 article-card 跨越 2 列即可在视觉上平衡。*/
+            grid-column: span 2;
+        }
+        @media (max-width: 900px) {
+            #news-grid .article-card { grid-column: span 2; }
+        }
+        @media (max-width: 600px) {
+            #news-grid .article-card { grid-column: span 1; flex-direction: column !important; }
+            #news-grid .article-card > div:first-child { width: 100% !important; aspect-ratio: 16/9 !important; }
+        }
+
+        /* ========== 加载更多 ========== */
+        .load-more-wrap {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 24px 0 8px;
+        }
+        .load-more-btn {
+            padding: 10px 32px;
+            border: 1px solid var(--border);
+            background: var(--surface);
+            color: var(--text-2);
+            border-radius: 24px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .load-more-btn:hover {
+            color: var(--brand);
+            border-color: var(--brand);
+            background: var(--brand-light);
+        }
+        .load-more-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .load-more-info {
+            margin-top: 10px;
+            font-size: 12px;
+            color: var(--text-3);
+        }
+
+        /* ========== Loading / Error / Empty ========== */
+        .loading, .empty, .error-state {
+            text-align: center;
+            padding: 80px 20px;
+            color: var(--text-3);
+        }
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid var(--border);
+            border-top-color: var(--brand);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 16px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .error-state { color: #ef4444; }
+        .error-state button {
+            margin-top: 14px;
+            padding: 8px 20px;
+            border-radius: 20px;
+            border: 1px solid #ef4444;
+            background: white;
+            color: #ef4444;
+            cursor: pointer;
+            font-size: 13px;
+        }
+
+        /* ========== 日报 ========== */
+        .daily-date {
+            font-size: 15px;
+            color: var(--text-2);
+            margin-bottom: 20px;
+            padding: 12px 16px;
+            background: var(--surface);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+        }
+        .daily-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 18px;
+        }
+        .daily-card {
+            background: var(--surface);
+            border-radius: var(--radius);
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            transition: all 0.25s;
+            cursor: pointer;
+        }
+        .daily-card:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-hover);
+        }
+        .daily-card-cover {
+            position: relative;
+            aspect-ratio: 16/9;
+            background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+            overflow: hidden;
+        }
+        .daily-card-cover img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .daily-card-cover::after {
+            content: attr(data-cat);
+            position: absolute;
+            left: 10px;
+            bottom: 10px;
+            padding: 3px 10px;
+            background: rgba(0,0,0,0.6);
+            color: white;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .daily-card-info { padding: 14px; }
+        .daily-card-title {
+            font-size: 15px;
+            font-weight: 600;
+            line-height: 1.5;
+            margin-bottom: 10px;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        .daily-card-meta {
+            font-size: 12px;
+            color: var(--text-3);
+        }
+
+        /* ========== 热榜 ========== */
+        .hotlist-card {
+            background: var(--surface);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+            margin-bottom: 24px;
+        }
+        .hotlist-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 20px;
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
+            color: white;
+        }
+        .hotlist-title {
+            font-size: 18px;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .hotlist-date {
+            font-size: 13px;
+            opacity: 0.9;
+        }
+        .hotlist-body { padding: 6px 0; }
+        .hot-item {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 12px 20px;
+            cursor: pointer;
+            transition: background 0.15s;
+            border-bottom: 1px solid var(--border);
+        }
+        .hot-item:last-child { border-bottom: none; }
+        .hot-item:hover { background: var(--brand-light); }
+        .hot-rank {
+            width: 28px;
+            height: 28px;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: 800;
+            color: var(--text-3);
+            border-radius: 6px;
+        }
+        .hot-rank.top1 { background: #ff4d4f; color: white; }
+        .hot-rank.top2 { background: #ff7a45; color: white; }
+        .hot-rank.top3 { background: #ffa940; color: white; }
+        .hot-content { flex: 1; min-width: 0; }
+        .hot-item-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 4px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .hot-item-meta {
+            font-size: 12px;
+            color: var(--text-3);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .hot-badge {
+            flex-shrink: 0;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 11px;
+            font-weight: 700;
+            background: #ef4444;
+            color: white;
+        }
+        .hot-score {
+            flex-shrink: 0;
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--brand);
+            min-width: 36px;
+            text-align: right;
+        }
+
+        /* ========== 信源管理 ========== */
+        .add-source-card {
+            background: var(--surface);
+            padding: 20px;
+            border-radius: var(--radius);
+            margin-bottom: 20px;
+            box-shadow: var(--shadow);
+        }
+        .add-source-card h3 {
+            font-size: 15px;
+            margin-bottom: 14px;
+            color: var(--text);
+        }
+        .form-grid {
+            display: grid;
+            grid-template-columns: 2fr 3fr 1.5fr auto;
+            gap: 10px;
+        }
+        .form-input {
+            padding: 10px 14px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.15s;
+        }
+        .form-input:focus { border-color: var(--brand); }
+        .action-btn {
+            padding: 8px 18px;
+            border-radius: 8px;
+            border: none;
+            background: var(--brand);
+            color: white;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.15s;
+        }
+        .action-btn:hover { background: var(--brand-dark); }
+        .action-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .source-table {
+            width: 100%;
+            background: var(--surface);
+            border-radius: var(--radius);
+            overflow: hidden;
+            box-shadow: var(--shadow);
+        }
+        .source-row {
+            display: grid;
+            grid-template-columns: 50px 1fr 2fr 100px 80px 120px;
+            align-items: center;
+            padding: 14px 18px;
+            border-bottom: 1px solid var(--border);
+            gap: 10px;
+        }
+        .source-row:last-child { border-bottom: none; }
+        .source-row.header {
+            background: #f8f9fa;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-2);
+        }
+        .source-id { color: var(--text-3); font-size: 13px; }
+        .source-name { font-weight: 600; color: var(--text); font-size: 14px; }
+        .source-url {
+            color: var(--brand);
+            font-size: 12px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .source-count {
+            text-align: center;
+            font-size: 13px;
+            color: var(--text-2);
+            font-weight: 500;
+        }
+        .toggle-switch {
+            position: relative;
+            width: 40px;
+            height: 22px;
+            justify-self: center;
+        }
+        .toggle-switch input { display: none; }
+        .toggle-slider {
+            position: absolute;
+            inset: 0;
+            background: var(--border);
+            border-radius: 22px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .toggle-slider::before {
+            content: '';
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            left: 3px;
+            top: 3px;
+            background: white;
+            border-radius: 50%;
+            transition: 0.2s;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        }
+        input:checked + .toggle-slider { background: var(--brand); }
+        input:checked + .toggle-slider::before { transform: translateX(18px); }
+        .source-actions {
+            display: flex;
+            gap: 6px;
+            justify-content: flex-end;
+        }
+        .icon-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            transition: all 0.15s;
+            color: var(--text-2);
+        }
+        .icon-btn:hover { border-color: #ef4444; color: #ef4444; background: #fef2f2; }
+        .icon-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 12px 20px;
+            border-radius: 10px;
+            background: #0f172a;
+            color: white;
+            font-size: 13px;
+            z-index: 9999;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            opacity: 0;
+            transform: translateY(-10px);
+            transition: all 0.25s;
+        }
+        .toast.show { opacity: 1; transform: translateY(0); }
+        .toast.success { background: #059669; }
+        .toast.error { background: #dc2626; }
+
+        /* ========== 响应式 ========== */
+        @media (max-width: 1200px) {
+            #news-grid { grid-template-columns: repeat(3, 1fr); }
+            .daily-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+        @media (max-width: 900px) {
+            .hero-grid { grid-template-columns: 1fr; }
+            .hero-side { grid-template-columns: repeat(2, 1fr); }
+            #news-grid { grid-template-columns: repeat(2, 1fr); }
+            .daily-grid { grid-template-columns: 1fr; }
+            .nav-inner { gap: 14px; }
+            .search-box { max-width: 260px; }
+            .vip-entry span { display: none; }
+            .form-grid { grid-template-columns: 1fr; }
+            .source-row {
+                grid-template-columns: 30px 1fr auto;
+                grid-template-areas:
+                    "id  name  actions"
+                    "url url   url"
+                    "cat count toggle";
+                padding: 14px;
+            }
+            .source-row.header { display: none; }
+            .source-id { grid-area: id; }
+            .source-name { grid-area: name; }
+            .source-url { grid-area: url; margin-top: 4px; }
+            .source-count { grid-area: count; justify-self: start; text-align: left; }
+            .toggle-switch { grid-area: toggle; }
+            .source-actions { grid-area: actions; }
+            .refresh-float { display: none; }
+        }
+        @media (max-width: 600px) {
+            .nav-inner { flex-wrap: wrap; }
+            .search-box { order: 3; max-width: none; width: 100%; }
+            #news-grid, .hero-side { grid-template-columns: 1fr; }
+            .category-nav { padding: 10px 0; }
+            .cat-item { font-size: 13px; padding: 5px 10px; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- 顶部导航 -->
+<header class="top-nav">
+    <div class="nav-inner">
+        <div class="logo-area">
+            <div class="logo-icon">📰</div>
+            <div class="logo-text">资讯<span>聚合</span></div>
+        </div>
+        <div class="search-box">
+            <input type="text" placeholder="搜索感兴趣的资讯...">
+            <button>搜索</button>
+        </div>
+        <div class="nav-actions">
+            <div class="vip-entry" onclick="switchTab('daily')">
+                <span>👑</span> 大会员日报
+            </div>
+            <div class="auto-collect-bar" id="auto-collect-bar" title="点击开关 / 调整间隔" onclick="toggleAutoCollect()">
+                <span class="ac-dot"></span>
+                <span class="ac-label">自动收集</span>
+                <span class="ac-next" id="ac-next"></span>
+            </div>
+            <div class="nav-icon" title="刷新" onclick="refreshContent()">🔄</div>
+            <div class="nav-icon" title="信源管理" onclick="switchTab('sources')">⚙️</div>
+        </div>
+    </div>
+</header>
+
+<!-- 分类导航 -->
+<nav class="category-nav">
+    <div class="cat-inner">
+        <div class="cat-row" id="cat-row-primary">
+            <span class="cat-item active" data-cat="全部">首页</span>
+            <span class="cat-item" data-cat="技术">技术</span>
+            <span class="cat-item" data-cat="行业">行业</span>
+            <span class="cat-item" data-cat="财经">财经</span>
+            <span class="cat-item" data-cat="科学">科学</span>
+            <span class="cat-item" data-cat="产品">产品</span>
+            <span class="cat-item" data-cat="设计">设计</span>
+            <span class="cat-item" data-cat="人工智能">人工智能</span>
+            <span class="cat-item" data-cat="知识">知识</span>
+            <span class="cat-item" data-cat="精选">精选</span>
+        </div>
+        <div class="cat-row" id="cat-row-media" style="padding-left:4px;">
+            <span style="font-size:13px;color:var(--text-3);margin-right:6px;align-self:center;">媒体类型</span>
+            <!-- JS 动态渲染媒体类型 item -->
+        </div>
+    </div>
+</nav>
+
+<!-- 主体 -->
+<main class="main-content">
+
+    <!-- Tab 按钮 -->
+    <nav class="tabs">
+        <button class="tab-btn active" data-tab="news">📋 资讯列表</button>
+        <button class="tab-btn" data-tab="daily">🔥 每日日报</button>
+        <button class="tab-btn" data-tab="sources">⚙️ 信源管理</button>
+    </nav>
+
+    <!-- Tab 1: 资讯列表 -->
+    <section id="tab-news" class="tab-panel active">
+        <div id="news-featured"></div>
+        <div class="section-header">
+            <h2 class="section-title">推荐资讯</h2>
+        </div>
+        <div id="news-grid"></div>
+    </section>
+
+    <!-- Tab 2: 每日日报 -->
+    <section id="tab-daily" class="tab-panel">
+        <div id="daily-content"></div>
+    </section>
+
+    <!-- Tab 3: 信源管理 -->
+    <section id="tab-sources" class="tab-panel">
+        <div class="add-source-card">
+            <h3>➕ 添加 RSS 信源</h3>
+            <div class="form-grid">
+                <input class="form-input" type="text" id="input-name" placeholder="信源名称（如：知乎科技）">
+                <input class="form-input" type="text" id="input-url" placeholder="RSS URL 地址">
+                <input class="form-input" type="text" id="input-category" placeholder="分类（技术/行业/...）" value="技术">
+                <select class="form-input" id="input-media-type" title="信源默认媒体类型">
+                    <option value="article">📄 文章</option>
+                    <option value="image">🖼️ 图片</option>
+                    <option value="video">🎬 视频</option>
+                </select>
+                <button class="action-btn" onclick="addSource()" style="justify-content:center;">添加</button>
+            </div>
+        </div>
+        <div class="source-table" id="sources-list"></div>
+    </section>
+
+</main>
+
+<!-- 右侧悬浮换一换 -->
+<button class="refresh-float" id="btn-collect" onclick="refreshContent()">
+    <span class="icon">🔄</span> 刷新
+</button>
+
+<!-- Toast -->
+<div id="toast" class="toast"></div>
+
+<script>
+// ============ 配置 ============
+const API_BASE = 'http://localhost:5001/api';
+let currentCategory = '全部';
+
+// 渐变配色池（用于封面）
+const gradients = [
+    'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+    'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+    'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+    'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
+    'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
+    'linear-gradient(135deg, #30cfd0 0%, #330867 100%)',
+    'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)',
+    'linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%)',
+    'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)',
+    'linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%)',
+    'linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%)',
+    'linear-gradient(135deg, #d4fc79 0%, #96e6a1 100%)',
+];
+function getGradient(seed) {
+    const idx = (seed || 0) % gradients.length;
+    return gradients[idx];
+}
+
+// 分类配图 prompt 映射（英文描述以获得更稳定的出图效果）
+const categoryImagePrompts = {
+    '技术': 'modern technology illustration with code snippets and circuit patterns, blue and purple tones',
+    '行业': 'business and industry illustration with modern office buildings, professional blue tones',
+    '财经': 'financial market illustration with stock charts and upward graphs, green and gold tones',
+    '科学': 'scientific research illustration with molecules and laboratory equipment, teal tones',
+    '产品': 'product design illustration with modern devices and UI elements, clean minimal style',
+    '设计': 'creative design illustration with colorful geometric shapes and color palette',
+    '人工智能': 'artificial intelligence illustration with neural network nodes and data flow, futuristic blue',
+    '知识': 'knowledge and learning illustration with books and digital content, warm tones',
+    '资讯': 'news media illustration with information flow icons, modern flat design',
+    '精选': 'featured news illustration with abstract colorful gradient design',
+};
+function getCoverUrl(category) {
+    const prompt = categoryImagePrompts[category] || 'news article abstract modern illustration';
+    return `https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=${encodeURIComponent(prompt)}&image_size=landscape_4_3`;
+}
+
+// 选择封面图片：优先后端采集到的真实封面图，否则 fallback 到分类 AI 生成图
+function chooseCover(newsItem) {
+    if (newsItem && newsItem.cover_img) {
+        return newsItem.cover_img;
+    }
+    return getCoverUrl(newsItem ? newsItem.category : null);
+}
+
+// 加载真实封面失败时用此函数自动降级（onerror 触发）
+function coverFallback(imgEl, category, gradientEl) {
+    if (!imgEl) return;
+    // 只回退一次，避免 onerror 死循环
+    if (imgEl.dataset.fb) {
+        imgEl.style.display = 'none';
+        return;
+    }
+    imgEl.dataset.fb = '1';
+    imgEl.src = getCoverUrl(category || null);
+    // 如果二次回退还失败（加载不到 AI 生成图），就让父级渐变显露出即可
+    imgEl.onerror = function () {
+        this.style.display = 'none';
+    };
+}
+
+// 格式化秒 -> mm:ss 或 HhMMm
+function formatDuration(sec) {
+    if (!sec) return '';
+    sec = parseInt(sec, 10);
+    if (!sec || sec <= 0) return '';
+    const h = Math.floor(sec / 3600);
+    const m = Math.floor((sec % 3600) / 60);
+    const s = sec % 60;
+    if (h > 0) return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+    return `${m}:${String(s).padStart(2, '0')}`;
+}
+
+// 媒体类型筛选
+let currentMediaType = 'all';  // all / article / image / video
+const mediaTypeOptions = [
+    { key: 'all', label: '全部', icon: '📋' },
+    { key: 'article', label: '纯文', icon: '📄' },
+    { key: 'image', label: '图文', icon: '🖼️' },
+    { key: 'video', label: '视频', icon: '🎬' },
+];
+
+// ============ Tab 切换 ============
+document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => switchTab(btn.dataset.tab));
+});
+
+function switchTab(tab) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    document.querySelector(`.tab-btn[data-tab="${tab}"]`)?.classList.add('active');
+    document.getElementById('tab-' + tab)?.classList.add('active');
+
+    if (tab === 'daily') loadDaily();
+    if (tab === 'sources') loadSources();
+}
+
+// ============ 分类切换 ============
+function bindCategoryEvents() {
+    document.querySelectorAll('#cat-row-primary .cat-item').forEach(item => {
+        item.addEventListener('click', () => {
+            document.querySelectorAll('#cat-row-primary .cat-item').forEach(i => i.classList.remove('active'));
+            item.classList.add('active');
+            currentCategory = item.dataset.cat;
+            loadNews();
+        });
+    });
+}
+
+// 初始化媒体筛选按钮
+function renderMediaTypeBar() {
+    const container = document.getElementById('cat-row-media');
+    if (!container) return;
+    // 保留首项"媒体类型"说明标签
+    container.innerHTML = `<span style="font-size:13px;color:var(--text-3);margin-right:6px;align-self:center;">媒体类型</span>`
+        + mediaTypeOptions.map(opt => `
+            <span class="cat-item ${opt.key === currentMediaType ? 'active' : ''}"
+                  data-media="${opt.key}" title="${opt.label}">
+                ${opt.icon} ${opt.label}
+            </span>
+        `).join('');
+    container.querySelectorAll('.cat-item').forEach(el => {
+        el.addEventListener('click', () => {
+            container.querySelectorAll('.cat-item').forEach(i => i.classList.remove('active'));
+            el.classList.add('active');
+            currentMediaType = el.dataset.media;
+            loadNews();
+        });
+    });
+}
+
+bindCategoryEvents();
+renderMediaTypeBar();
+
+// ============ 工具函数 ============
+function showToast(msg, type = 'success') {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = 'toast show ' + type;
+    setTimeout(() => t.className = 'toast', 2400);
+}
+
+function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str || '';
+    return div.innerHTML;
+}
+
+async function api(url, options = {}) {
+    try {
+        const res = await fetch(API_BASE + url, {
+            headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
+            ...options
+        });
+        return await res.json();
+    } catch (e) {
+        return { code: 500, msg: e.message, data: null };
+    }
+}
+
+// ============ 资讯列表 ============
+const INITIAL_PAGE_SIZE = 16;   // 初始网格显示条数（不含推荐位）
+const LOAD_MORE_STEP = 12;       // 每次点击"加载更多"追加条数
+let currentSortedList = [];      // 当前排序后的完整列表
+let currentDisplayCount = INITIAL_PAGE_SIZE;
+
+async function loadNews(randomize = false) {
+    const featuredContainer = document.getElementById('news-featured');
+    const gridContainer = document.getElementById('news-grid');
+    featuredContainer.innerHTML = '';
+    gridContainer.innerHTML = `<div class="loading"><div class="spinner"></div>正在加载资讯...</div>`;
+
+    // 构建请求 URL：分类 + 媒体类型都通过后端 API 过滤
+    let url = '/news?limit=200';
+    if (currentCategory !== '全部') {
+        if (currentCategory === '精选') {
+            url += '&min_score=80';
+        } else {
+            url += `&category=${encodeURIComponent(currentCategory)}`;
+        }
+    }
+    if (currentMediaType !== 'all') {
+        url += `&media_type=${encodeURIComponent(currentMediaType)}`;
+    }
+    const res = await api(url);
+
+    if (res.code !== 200) {
+        gridContainer.innerHTML = `
+            <div class="error-state">
+                ❌ 加载失败：${escapeHtml(res.msg)}
+                <br><button onclick="loadNews()">重新加载</button>
+            </div>`;
+        return;
+    }
+
+    const list = res.data || [];
+    if (!list.length) {
+        const labels = { article: '纯文', image: '图文', video: '视频' };
+        gridContainer.innerHTML = `<div class="empty">📭 暂无${currentMediaType !== 'all' ? '「' + (labels[currentMediaType] || '') + '」类' : ''}资讯，可切换其他媒体类型或点击"🔄 刷新"</div>`;
+        featuredContainer.innerHTML = '';
+        return;
+    }
+
+    // 更新分类列表（动态追加不存在的分类）
+    updateCategoryRows(list);
+
+    // 按评分降序排序：分数最高的放推荐位大图
+    let sorted = [...list].sort((a, b) => (b.score || 0) - (a.score || 0));
+    // 换一批：推荐位（前 5 高分）保持稳定，网格部分洗牌，让每次刷新看到不同内容
+    if (randomize && sorted.length > 5) {
+        const top = sorted.slice(0, 5);
+        const rest = sorted.slice(5);
+        for (let i = rest.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [rest[i], rest[j]] = [rest[j], rest[i]];
+        }
+        sorted = [...top, ...rest];
+    }
+    currentSortedList = sorted;
+    currentDisplayCount = INITIAL_PAGE_SIZE;
+
+    renderNewsList();
+}
+
+function renderNewsList() {
+    const featuredContainer = document.getElementById('news-featured');
+    const gridContainer = document.getElementById('news-grid');
+
+    // 前 5 条做 1大+4小 推荐位（大图=最高分）
+    const featured = currentSortedList.slice(0, 5);
+    featuredContainer.innerHTML = renderHero(featured);
+
+    // 网格部分：推荐位之后取 currentDisplayCount 条
+    const rest = currentSortedList.slice(5, 5 + currentDisplayCount);
+    const total = currentSortedList.length;
+    const shown = rest.length + 5;
+    const hasMore = total > shown;
+
+    gridContainer.innerHTML = rest.map((n, i) => renderVideoCard(n, i + 5)).join('');
+    if (hasMore) {
+        gridContainer.innerHTML += `
+            <div class="load-more-wrap">
+                <button class="load-more-btn" onclick="loadMore()">加载更多</button>
+                <div class="load-more-info">已显示 ${shown} / ${total} 条</div>
+            </div>`;
+    } else if (total > 5) {
+        gridContainer.innerHTML += `
+            <div class="load-more-wrap">
+                <div class="load-more-info">已显示全部 ${total} 条资讯</div>
+            </div>`;
+    }
+}
+
+function loadMore() {
+    currentDisplayCount += LOAD_MORE_STEP;
+    renderNewsList();
+}
+
+function updateCategoryRows(list) {
+    const cats = [...new Set(list.map(n => n.category).filter(Boolean))];
+    const primaryContainer = document.getElementById('cat-row-primary');
+    const existing = new Set([...primaryContainer.querySelectorAll('.cat-item')].map(el => el.dataset.cat));
+    cats.forEach(cat => {
+        if (!existing.has(cat) && !['全部', '精选'].includes(cat)) {
+            const span = document.createElement('span');
+            span.className = 'cat-item';
+            span.dataset.cat = cat;
+            span.textContent = cat;
+            primaryContainer.appendChild(span);
+        }
+    });
+    bindCategoryEvents();
+}
+
+function renderHero(list) {
+    if (!list.length) return '';
+    const main = list[0];
+    const side = list.slice(1, 5);
+    const coverMain = chooseCover(main);
+    const mainDuration = formatDuration(main.duration);
+    const mainMediaBadge = main.media_type === 'video' ? '🎬' : (main.media_type === 'image' ? '🖼️' : '');
+    return `
+        <div class="hero-grid">
+            <article class="hero-card" onclick="openUrl('${escapeHtml(main.url)}')">
+                <div class="hero-cover" style="background:${getGradient(main.id)}">
+                    <img src="${escapeHtml(coverMain)}" alt="" loading="lazy"
+                         onerror="coverFallback(this, '${escapeHtml(main.category || '')}')">
+                    <div class="hero-rank">1</div>
+                    ${mainDuration ? `<span class="side-duration" style="right:12px;">${mainDuration}</span>` : ''}
+                    ${mainMediaBadge ? `<span style="position:absolute;left:52px;top:12px;z-index:2;padding:2px 8px;border-radius:8px;background:rgba(0,0,0,0.65);color:#fff;font-size:12px;">${mainMediaBadge}</span>` : ''}
+                    <div class="hero-info">
+                        <h2 class="hero-title">${escapeHtml(main.title)}</h2>
+                        <div class="hero-meta">
+                            <span>${escapeHtml(main.category || '未分类')}</span>
+                            <span>·</span>
+                            <span>${escapeHtml(main.source_name || '未知')}</span>
+                            <span>·</span>
+                            <span>评分 ${main.score}</span>
+                        </div>
+                    </div>
+                </div>
+            </article>
+            <div class="hero-side">
+                ${side.map((n, i) => {
+                    const cover = chooseCover(n);
+                    const dur = formatDuration(n.duration);
+                    const badge = n.media_type === 'video' ? '🎬' : (n.media_type === 'image' ? '🖼️' : '');
+                    return `
+                    <article class="side-card" onclick="openUrl('${escapeHtml(n.url)}')">
+                        <div class="side-cover" style="background:${getGradient(n.id)}">
+                            <img src="${escapeHtml(cover)}" alt="" loading="lazy"
+                                 onerror="coverFallback(this, '${escapeHtml(n.category || '')}')">
+                            ${dur ? `<span class="side-duration">${dur}</span>`
+                                  : `<span class="side-duration">${i + 2}</span>`}
+                            ${badge ? `<span style="position:absolute;left:8px;top:8px;z-index:2;padding:2px 6px;border-radius:6px;background:rgba(0,0,0,0.6);color:#fff;font-size:11px;">${badge}</span>` : ''}
+                        </div>
+                        <div class="side-info">
+                            <h3 class="side-title">${escapeHtml(n.title)}</h3>
+                            <div class="side-meta">
+                                <span>${escapeHtml(n.source_name || '未知')}</span>
+                                <span>·</span>
+                                <span>评分 ${n.score}</span>
+                            </div>
+                        </div>
+                    </article>
+                `;}).join('')}
+            </div>
+        </div>
+    `;
+}
+
+function renderVideoCard(n, idx) {
+    const isFeatured = n.score >= 80;
+    const cover = chooseCover(n);
+    const dur = formatDuration(n.duration);
+    const mediaBadge = n.media_type === 'video' ? '🎬 视频'
+                     : n.media_type === 'image' ? '🖼️ 图片' : '';
+    // 有封面图时用左图右文（更紧凑，信息量更高）；无真实封面则退化回上图下文 + 渐变背景的"视频卡片"样式
+    const hasRealCover = !!n.cover_img;
+    const summary = (n.summary || '').slice(0, 70);
+    const showSummary = hasRealCover && summary;  // 只对有真实封面的卡片展示摘要，保持整洁
+    if (hasRealCover) {
+        return `
+        <article class="article-card" onclick="openUrl('${escapeHtml(n.url)}')"
+            style="display:flex;gap:12px;padding:12px;background:var(--surface);border-radius:var(--radius);
+                   box-shadow:var(--shadow);cursor:pointer;transition:all .2s;">
+            <div style="flex-shrink:0;width:140px;aspect-ratio:4/3;border-radius:10px;overflow:hidden;position:relative;background:${getGradient(n.id)}">
+                <img src="${escapeHtml(cover)}" alt="" loading="lazy"
+                     style="width:100%;height:100%;object-fit:cover;"
+                     onerror="coverFallback(this, '${escapeHtml(n.category || '')}')">
+                ${dur ? `<span style="position:absolute;right:6px;bottom:6px;padding:2px 6px;background:rgba(0,0,0,0.7);color:#fff;border-radius:4px;font-size:11px;">${dur}</span>` : ''}
+                ${mediaBadge ? `<span style="position:absolute;left:6px;top:6px;padding:2px 6px;background:rgba(0,0,0,0.65);color:#fff;border-radius:6px;font-size:11px;">${mediaBadge}</span>` : ''}
+                ${isFeatured ? '<span style="position:absolute;right:6px;top:6px;padding:2px 8px;border-radius:10px;background:#ef4444;color:#fff;font-size:11px;font-weight:700;z-index:2;">★精选</span>' : ''}
+            </div>
+            <div style="flex:1;min-width:0;display:flex;flex-direction:column;">
+                <h3 style="font-size:14px;font-weight:600;line-height:1.45;color:var(--text);margin-bottom:6px;
+                           display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:wrap;overflow:hidden;">${escapeHtml(n.title)}</h3>
+                ${showSummary ? `<p style="font-size:12px;color:var(--text-2);line-height:1.5;margin-bottom:8px;
+                           display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">${escapeHtml(summary)}…</p>` : ''}
+                <div style="margin-top:auto;display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text-3);">
+                    <span>${escapeHtml(n.source_name || '未知')}</span>
+                    <span>·</span>
+                    <span>评分 ${n.score}</span>
+                    <span>·</span>
+                    <span>${formatDate(n.published_at)}</span>
+                </div>
+            </div>
+        </article>
+        `;
+    }
+    return `
+        <article class="video-card" onclick="openUrl('${escapeHtml(n.url)}')">
+            <div class="video-cover" style="background:${getGradient(n.id)}">
+                <img src="${escapeHtml(cover)}" alt="" loading="lazy"
+                     onerror="coverFallback(this, '${escapeHtml(n.category || '')}')">
+                ${dur ? `<span class="video-badge">${dur}</span>` : ''}
+                ${mediaBadge ? `<span style="position:absolute;left:10px;top:10px;padding:2px 8px;border-radius:10px;background:rgba(0,0,0,0.65);color:#fff;font-size:11px;font-weight:700;z-index:2;">${mediaBadge}</span>` : ''}
+                ${isFeatured ? '<span class="video-badge hot">★精选</span>' : ''}
+            </div>
+            <div class="video-info">
+                <h3 class="video-title">${escapeHtml(n.title)}</h3>
+                <div class="video-meta">
+                    <span>${escapeHtml(n.source_name || '未知')}</span>
+                    <span>·</span>
+                    <span>评分 ${n.score}</span>
+                    <span>·</span>
+                    <span>${formatDate(n.published_at)}</span>
+                </div>
+            </div>
+        </article>
+    `;
+}
+
+function formatDate(dateStr) {
+    if (!dateStr) return '-';
+    const d = new Date(dateStr);
+    if (isNaN(d)) return dateStr;
+    const now = new Date();
+    const diff = (now - d) / 1000;
+    if (diff < 3600) return Math.ceil(diff / 60) + '分钟前';
+    if (diff < 86400) return Math.floor(diff / 3600) + '小时前';
+    return (d.getMonth() + 1) + '-' + d.getDate();
+}
+
+function openUrl(url) {
+    if (url) window.open(url, '_blank', 'noopener');
+}
+
+// ============ 每日日报 ============
+async function loadDaily() {
+    const container = document.getElementById('daily-content');
+    container.innerHTML = `<div class="loading"><div class="spinner"></div>正在生成日报...</div>`;
+
+    // 并行获取日报和热榜
+    const [dailyRes, hotRes] = await Promise.all([
+        api('/daily'),
+        api('/hotlist')
+    ]);
+
+    if (dailyRes.code !== 200) {
+        container.innerHTML = `
+            <div class="error-state">
+                ❌ 日报加载失败：${escapeHtml(dailyRes.msg)}
+                <br><button onclick="loadDaily()">重新加载</button>
+            </div>`;
+        return;
+    }
+
+    const d = dailyRes.data;
+    const items = [];
+    (d.groups || []).forEach(g => items.push(...g.items));
+
+    // 热榜数据（今天采集到的，取前 10；无则回退到前几天）
+    const hot = (hotRes.code === 200 && hotRes.data) ? (hotRes.data.items || []) : [];
+    const hotDate = (hotRes.code === 200 && hotRes.data) ? hotRes.data.date : d.date;
+    const hotIsToday = (hotRes.code === 200 && hotRes.data) ? hotRes.data.is_today : true;
+
+    container.innerHTML = `
+        ${renderHotlist(hot, hotDate, hotIsToday)}
+        <div class="daily-date">📅 ${escapeHtml(d.date)} 今日共 ${d.total} 条精选资讯</div>
+        ${items.length ? `
+            <div class="daily-grid">
+                ${items.map((it, i) => {
+                    const cover = chooseCover(it);
+                    const dur = formatDuration(it.duration);
+                    const mediaBadge = it.media_type === 'video' ? '🎬' : (it.media_type === 'image' ? '🖼️' : '');
+                    const isFeatured = it.score >= 80;
+                    return `
+                    <article class="daily-card" onclick="openUrl('${escapeHtml(it.url)}')">
+                        <div class="daily-card-cover" style="background:${getGradient(it.id)}" data-cat="${escapeHtml(it.category || '其他')}">
+                            <img src="${escapeHtml(cover)}" alt="" loading="lazy"
+                                 onerror="coverFallback(this, '${escapeHtml(it.category || '')}')">
+                            ${dur ? `<span class="side-duration" style="right:10px;bottom:10px;padding:2px 6px;">${dur}</span>` : ''}
+                            ${mediaBadge ? `<span style="position:absolute;right:${dur ? '70' : '10'}px;bottom:10px;padding:2px 8px;border-radius:8px;background:rgba(0,0,0,0.6);color:#fff;font-size:11px;z-index:3;">${mediaBadge}</span>` : ''}
+                            ${isFeatured ? `<span style="position:absolute;left:10px;top:10px;padding:2px 8px;border-radius:10px;background:#ef4444;color:#fff;font-size:11px;font-weight:700;z-index:3;">★精选</span>` : ''}
+                        </div>
+                        <div class="daily-card-info">
+                            <h3 class="daily-card-title">${escapeHtml(it.title)}</h3>
+                            <div class="daily-card-meta">
+                                <span>${escapeHtml(it.source_name || '')}</span>
+                                <span>·</span>
+                                <span>评分 ${it.score}</span>
+                            </div>
+                        </div>
+                    </article>
+                `}).join('')}
+            </div>
+        ` : '<div class="empty">📭 今日暂无日报数据</div>'}
+    `;
+}
+
+// ============ 热榜渲染 ============
+function renderHotlist(items, date, isToday) {
+    const title = isToday ? '🔥 今日热榜' : '🔥 热榜';
+    const subtitle = items && items.length
+        ? `${escapeHtml(date)} · 共 ${items.length} 条${isToday ? '' : '（当日无新数据，已回退至该日）'}`
+        : escapeHtml(date);
+    if (!items || !items.length) {
+        return `
+            <div class="hotlist-card">
+                <div class="hotlist-header">
+                    <div class="hotlist-title">${title}</div>
+                    <div class="hotlist-date">${escapeHtml(date)}</div>
+                </div>
+                <div class="empty" style="padding:40px 20px;">📭 近 7 天尚未采集到内容，点击右侧"换一换"开始采集</div>
+            </div>
+        `;
+    }
+    return `
+        <div class="hotlist-card">
+            <div class="hotlist-header">
+                <div class="hotlist-title">${title}</div>
+                <div class="hotlist-date">${subtitle}</div>
+            </div>
+            <div class="hotlist-body">
+                ${items.map((it, i) => {
+                    const rank = i + 1;
+                    const rankClass = rank <= 3 ? `top${rank}` : '';
+                    const badge = rank === 1 ? '<span class="hot-badge">沸</span>'
+                                : rank === 2 ? '<span class="hot-badge">热</span>'
+                                : rank === 3 ? '<span class="hot-badge">新</span>' : '';
+                    return `
+                        <div class="hot-item" onclick="openUrl('${escapeHtml(it.url)}')">
+                            <div class="hot-rank ${rankClass}">${rank}</div>
+                            <div class="hot-content">
+                                <div class="hot-item-title">${escapeHtml(it.title)}</div>
+                                <div class="hot-item-meta">
+                                    <span>${escapeHtml(it.source_name || '未知')}</span>
+                                    <span>·</span>
+                                    <span>${escapeHtml(it.category || '其他')}</span>
+                                </div>
+                            </div>
+                            ${badge}
+                            <div class="hot-score">${it.score}</div>
+                        </div>
+                    `;
+                }).join('')}
+            </div>
+        </div>
+    `;
+}
+
+// ============ 信源管理 ============
+async function loadSources() {
+    const container = document.getElementById('sources-list');
+    container.innerHTML = `<div class="loading"><div class="spinner"></div>加载信源...</div>`;
+
+    const res = await api('/sources');
+    if (res.code !== 200) {
+        container.innerHTML = `<div class="error-state">加载失败：${escapeHtml(res.msg)}</div>`;
+        return;
+    }
+
+    const sources = res.data || [];
+    container.innerHTML = `
+        <div class="source-row header">
+            <div>ID</div>
+            <div>名称</div>
+            <div>RSS 地址</div>
+            <div style="text-align:center;">资讯数</div>
+            <div style="text-align:center;">启用</div>
+            <div style="text-align:right;">操作</div>
+        </div>
+        ${sources.map(s => {
+            const mt = s.default_media_type || 'article';
+            const mtIcon = mt === 'video' ? '🎬' : mt === 'image' ? '🖼️' : '📄';
+            const mtLabel = mt === 'video' ? '视频' : mt === 'image' ? '图片' : '文章';
+            return `
+            <div class="source-row">
+                <div class="source-id">${s.id}</div>
+                <div class="source-name">${escapeHtml(s.name)}
+                    <span style="font-size:11px;color:var(--text-3);margin-left:6px;">[${escapeHtml(s.category || '-')}]</span>
+                    <span style="font-size:11px;margin-left:4px;" title="媒体类型: ${mtLabel}">${mtIcon}</span>
+                </div>
+                <div class="source-url" title="${escapeHtml(s.url)}">${escapeHtml(s.url)}</div>
+                <div class="source-count">${s.news_count}</div>
+                <div style="text-align:center;">
+                    <label class="toggle-switch">
+                        <input type="checkbox" ${s.is_active ? 'checked' : ''} onchange="toggleSource(${s.id}, this.checked)">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+                <div class="source-actions">
+                    <button class="icon-btn" onclick="deleteSource(${s.id}, this)" title="删除">🗑️</button>
+                </div>
+            </div>
+        `;}).join('')}
+    `;
+}
+
+async function addSource() {
+    const name = document.getElementById('input-name').value.trim();
+    const url = document.getElementById('input-url').value.trim();
+    const category = document.getElementById('input-category').value.trim() || '其他';
+    const default_media_type = document.getElementById('input-media-type').value;
+
+    if (!name || !url) {
+        showToast('请填写名称和URL', 'error');
+        return;
+    }
+
+    const res = await api('/sources', {
+        method: 'POST',
+        body: JSON.stringify({ name, url, category, default_media_type })
+    });
+
+    if (res.code === 200) {
+        showToast('添加成功');
+        document.getElementById('input-name').value = '';
+        document.getElementById('input-url').value = '';
+        loadSources();
+    } else {
+        showToast(res.msg || '添加失败', 'error');
+    }
+}
+
+async function toggleSource(id, isActive) {
+    const res = await api(`/sources/${id}/toggle`, { method: 'POST' });
+    if (res.code === 200) {
+        showToast(isActive ? '已启用' : '已停用');
+    } else {
+        showToast(res.msg, 'error');
+    }
+}
+
+async function deleteSource(id, btn) {
+    if (!confirm('确定删除该信源？（已采集的资讯不会被删除）')) return;
+    btn.disabled = true;
+    const res = await api(`/sources/${id}`, { method: 'DELETE' });
+    if (res.code === 200) {
+        showToast('删除成功');
+        loadSources();
+    } else {
+        showToast(res.msg || '删除失败', 'error');
+        btn.disabled = false;
+    }
+}
+
+// ============ 刷新当前内容（不触发采集） ============
+async function refreshContent() {
+    const btn = document.getElementById('btn-collect');
+    if (btn) {
+        btn.disabled = true;
+        const oldHtml = btn.innerHTML;
+        btn.innerHTML = '<span class="icon">⏳</span> 刷新中';
+        try {
+            await _doRefresh();
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = oldHtml.replace('刷新中', '刷新');
+        }
+    } else {
+        await _doRefresh();
+    }
+}
+
+async function _doRefresh() {
+    // 根据当前激活的 tab 决定刷新哪几块
+    const isDailyActive = document.getElementById('tab-daily')?.classList.contains('active');
+    const isSourcesActive = document.getElementById('tab-sources')?.classList.contains('active');
+    showToast('换一批中…');
+    // 资讯列表传 randomize=true：网格部分洗牌，每次刷新看到不同内容
+    await loadNews(true);
+    if (isDailyActive) await loadDaily();
+    if (isSourcesActive) await loadSources();
+    showToast('已换一批');
+}
+
+// ============ 自动收集状态条 ============
+let _acState = { enabled: false, cron: '0 */6 * * *', last_run_status: null, next_run_at: null };
+
+async function loadAutoCollectStatus() {
+    try {
+        const res = await fetch(API_BASE + '/auto-collect/status');
+        const data = await res.json();
+        if (data.code === 200) {
+            _acState = data.data;
+            renderAutoCollect();
+        }
+    } catch (e) { /* 静默失败，不打扰用户 */ }
+}
+
+// 将 cron 表达式转成可读标签：'0 */6 * * *' → '每天 0/6/12/18 点'
+function cronToLabel(cron) {
+    const f = (cron || '').split(/\s+/);
+    if (f.length !== 5) return cron || '6h 定时';
+    const [m, h] = f;
+    if (m === '0' && h.startsWith('*/')) {
+        const step = h.slice(2);
+        const n = 24 / parseInt(step, 10);
+        const hours = Array.from({ length: n }, (_, i) => i * parseInt(step, 10)).join('/');
+        return `每天 ${hours} 点`;
+    }
+    return cron;
+}
+
+function renderAutoCollect() {
+    const bar = document.getElementById('auto-collect-bar');
+    const next = document.getElementById('ac-next');
+    if (!bar) return;
+    bar.classList.remove('on', 'running', 'failed');
+    const status = _acState.last_run_status;
+    if (_acState.enabled) {
+        if (status === 'running') bar.classList.add('running');
+        else if (status === 'failed') bar.classList.add('failed');
+        else bar.classList.add('on');
+    }
+    const label = bar.querySelector('.ac-label');
+    label.textContent = _acState.enabled ? `自动收集·${cronToLabel(_acState.cron)}` : '自动收集·关';
+    if (_acState.enabled && _acState.next_run_at) {
+        next.textContent = '下次 ' + _acState.next_run_at.slice(11, 16);
+    } else if (status === 'running') {
+        next.textContent = '采集中…';
+    } else if (_acState.last_run_at) {
+        next.textContent = '上次 ' + _acState.last_run_at.slice(11, 16);
+    } else {
+        next.textContent = '';
+    }
+}
+
+async function toggleAutoCollect() {
+    // 点击切换开关
+    const next = !_acState.enabled;
+    const ok = confirm(next ? '开启自动收集？' : '关闭自动收集？');
+    if (!ok) return;
+    try {
+        const res = await fetch(API_BASE + '/auto-collect/toggle', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ enabled: next })
+        });
+        const data = await res.json();
+        if (data.code === 200) {
+            _acState = data.data;
+            renderAutoCollect();
+            showToast(next ? '已开启自动收集' : '已关闭自动收集');
+        } else {
+            showToast(data.msg || '操作失败', 'error');
+        }
+    } catch (e) {
+        showToast('请求失败：' + e.message, 'error');
+    }
+}
+
+// 启动后立即查一次状态，之后每 30 秒轮询
+loadAutoCollectStatus();
+setInterval(loadAutoCollectStatus, 30000);
+
+// ============ 初始化 ============
+(async function init() {
+    await loadNews();
+})();
+</script>
+</body>
+</html>

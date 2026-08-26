@@ -1,0 +1,5 @@
+flask
+feedparser
+requests
+flask-cors
+APScheduler>=3.10
